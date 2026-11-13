@@ -586,6 +586,20 @@ def install_features(rom, build_dir):
     install_speed(rom, sym)
     install_parallax(rom, sym)
     install_vd_map(rom, sym)
+    install_segswap(rom, sym)
+
+
+def install_segswap(rom, sym):
+    """Stage 2's segment, window and bank changes without the display off (src_patch/segswap.c,
+    tools/seg_reindex.py)."""
+    import seg_reindex
+    jmp = lambda a: b'\x4e\xf9' + be32(a)
+    expect(rom, 0x11A8B6, bytes.fromhex('61000150b07900ffb00c66000074300661 0000fcb07900ffb01c66000064'.replace(' ', '')),
+           'stage 2 window and segment tests')
+    put(rom, 0x11A8B6, jsr(sym['seg_check']) + bytes.fromhex('66000078') + bytes.fromhex('6012') + b'\x4e\x71' * 9)
+    expect(rom, 0x11AA4E, jsr(sym['par_dispoff']) + bytes.fromhex('4e7161d0'), 'stage 2 bank change (display off)')
+    put(rom, 0x11AA4E, jmp(sym['bank_hook']))
+    seg_reindex.install(rom, sym, put, be32)
 
 
 def install_parallax(rom, sym):
@@ -905,6 +919,11 @@ def install_stage_end(rom, sym):
     for a, old, name in ((0xBC26, 0x1158D0, 'se_wmove'), (0xC348C, 0x11677A, 'se_items'),
                          (0xC35E8, 0x11693E, 'se_items_draw')):
         expect(rom, a, jmp(old), name)
+        put(rom, a, jmp(sym[name]))
+    # stages 4-6's second table load keeps the second item object's pointer $FFCE18
+    for a, table, name in ((0x10F1C8, 0x247C14, 'item_reload4'), (0x110166, 0x254414, 'item_reload5'),
+                           (0x11111C, 0x25DBC4, 'item_reload6')):
+        expect(rom, a, b'\x41\xf9' + be32(table), name)
         put(rom, a, jmp(sym[name]))
     # weapons are drawn by their on-screen flag +9 (se_wmove sets it), not +8
     expect(rom, 0x115960, bytes.fromhex('4a2c0008673c'), 'weapon draw test')
