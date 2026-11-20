@@ -3,7 +3,8 @@
  * per-mode mapping:
  *   original / no mode : B, C act; A inserts a coin; Start starts (as shipped)
  *   ARCADE             : B, A act (A takes C's old role); C inserts a coin
- *   HOME               : B, C act (A = C); Start pauses during play
+ *   HOME               : fire and jump as its BUTTONS option (B, and A or C);
+ *                        Start pauses during play
  */
 #include "md.h"
 #include "common.h"
@@ -16,6 +17,8 @@ static const u8 dir_lut[16] = {
 
 void coin_inserted(void);
 void play_tick(void);
+int  vd_mirror(void);                    /* vendetta.c */
+void vd_mirror_hold(void);
 
 /* The arcade's input timing (gg3): its player routines read left/right as
  * (this frame AND last frame) ($93D0, inputs $4B/$4C from $6920/$6930), so a
@@ -55,6 +58,17 @@ u8 arcade_input(u8 raw, InFilter *f, int on_ground)
 }
 
 static InFilter p1f;
+
+/* Home's BUTTONS option (active high in and out): the fire button, and jump
+ * on the other two. The shipped port fires with B and jumps with A or C. */
+u8 home_buttons(u8 a, u8 b, u8 c, u8 *jump)
+{
+    switch (PERSIST->home[HOP_BUTTONS]) {
+    case 1:  *jump = b | c; return a;
+    case 2:  *jump = a | b; return c;
+    default: *jump = a | c; return b;
+    }
+}
 
 static u8 prev_start;
 
@@ -114,7 +128,7 @@ void pad_update(void)
         u8 b = !(t1 & 0x10), c = !(t1 & 0x20), a = !(t0 & 0x10);
         start = !(t0 & 0x20);
         if (mode == MODE_ARCADE) { act4 = b; act5 = a; coin = c; }
-        else if (mode == MODE_HOME) { act4 = b; act5 = c | a; coin = 0; }
+        else if (mode == MODE_HOME) { act4 = home_buttons(a, b, c, &act5); coin = 0; }
         else { act4 = b; act5 = c; coin = a; }
     }
 
@@ -126,6 +140,9 @@ void pad_update(void)
         prev_start = start;
     }
 
+    /* Vendetta's mirrored screen (vdmirror.s): right on the pad is left in
+     * the game's world */
+    if (in_play() && vd_mirror() && ((t1 >> 2 ^ t1 >> 3) & 1)) t1 ^= 0x0C;
     p1 = 0xC0 | dir_lut[t1 & 15];
     if (!act4) p1 |= 0x10;
     if (!act5) p1 |= 0x20;
@@ -166,6 +183,7 @@ void stage_hold(void)
 {
     int i, n = STAGE_HOLD - intro_hold() - 1;
     hide_frame();           /* (the HUD's TIME digits, drawn just before) */
+    vd_mirror_hold();       /* Vendetta's mirrored plane B scroll (vendetta.c) */
     for (i = 0; i < n; i++) {
         while (VDP_CTRL & 8) ;
         while (!(VDP_CTRL & 8)) ;

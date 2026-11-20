@@ -1,4 +1,4 @@
-MEGA GHOSTS'N GOBLINS  -  V0.8.4 ALPHA
+MEGA GHOSTS'N GOBLINS  -  V0.8.6 ALPHA
 rester159, 2026
 ==================================
 
@@ -7,8 +7,31 @@ run on real hardware and accurate emulators, faster, with 2-player co-op as
 Maximo and two campaigns as Firebrand, the Red Arremer. Formerly Ghosts'n
 Goblins MD.
 
-File: MegaGhosts'nGoblins_Alpha_0.8.4.bin  (4 MiB, regions J/U/E, NTSC and PAL)
-SHA-1: c161ae325d2a89ca9c338b8312aff6745e50efd7
+File: MegaGhosts'nGoblins_Alpha_0.8.6.bin  (4 MiB, regions J/U/E, NTSC and PAL)
+SHA-1: a1a55d776e6fa06b21419cbde57cf5e26d1b94da
+
+
+NEW IN V0.8.6
+-------------
+- HOME -> OPTIONS -> BUTTONS: choose the fire button. FIRE B (jump A or
+  C, as before), FIRE A (jump B or C) or FIRE C (jump A or B). Both pads
+  in 2-player co-op. Arcade mode keeps its layout.
+- HOME -> OPTIONS -> ATTACK: NORMAL, or 4-WAY: hold Up to throw the lance
+  straight up, or Down in a jump to throw it straight down (Arthur and
+  the lance only).
+
+
+NEW AND FIXED IN V0.8.5
+-----------------------
+- FIREBRAND'S VENDETTA plays left to right: each stage is shown mirrored,
+  so Firebrand still runs it from its end back to its start, but heads
+  right across the screen like any side-scroller. Up and down are
+  unchanged; text and score numbers are not mirrored.
+- Stage 2: no more black block at the end of the building, no stray tile
+  bands before the Unicorns, and moving along the street no longer
+  blanks the screen.
+- Stage 6: the hidden pot on the Ogre floor appears again and gives the
+  armor back, as in the arcade.
 
 
 NEW IN V0.8.4
@@ -129,8 +152,10 @@ HOME
   FIREBRAND'S QUEST PLUS  appears once the quest is beaten: top difficulty
                       throughout, half the hover time.
   OPTIONS ........... lives, continues, bonus life, difficulty, weapon after
-                      a death, English or Japanese (Makaimura) title,
-                      sound test
+                      a death, attack (4-WAY: hold Up to throw the lance
+                      straight up; jump and hold Down to throw it straight
+                      down; Arthur only), English or Japanese (Makaimura)
+                      title, sound test
 
 ARCADE
   DIP SWITCHES ...... coinage (including free play), lives, bonus life,

@@ -80,6 +80,8 @@ static void copy_from_game(void)
 int coop_start_lives(void);           /* settings.c */
 int fb_on(void);                      /* firebrand.c */
 u16 fb_sat(u16 len);
+void aim_sat(volatile u16 *buf, u16 n);
+void aim_p2(int on);
 
 static u32 vbl(void) { return RAM32(0xFF7DFC); }
 /* 3 seconds of video frames on this console */
@@ -163,8 +165,11 @@ static void read_pad2(void)
     irq_restore(sr);
     if (t0 & 0x0C) { input = 0xFF; return; }        /* no pad 2 */
     p = 0xC0 | dir_lut[t1 & 15];
-    if (t1 & 0x10) p |= 0x10;                       /* B */
-    if ((t1 & 0x20) && (t0 & 0x10)) p |= 0x20;      /* C or A */
+    {                                               /* Home's BUTTONS, as pad 1 */
+        u8 jump, fire = home_buttons(!(t0 & 0x10), !(t1 & 0x10), !(t1 & 0x20), &jump);
+        if (!fire) p |= 0x10;
+        if (!jump) p |= 0x20;
+    }
     input = p;
 }
 
@@ -337,7 +342,9 @@ void p2_frame(void)
     /* the loop keeps the previous position for the tombstone collision */
     RAM32(0xFF9220) = RAM32(0xFF9000);
     RAM32(0xFF922A) = RAM32(0xFF9400);
+    aim_p2(1);
     p2_control();
+    aim_p2(0);
     head_bounce(&arthur, &p2_bounced);  /* Maximo onto Arthur */
     /* Armor shatter ($5572 -> $6700 starts it, flag $FFC39C): $523C runs it for
      * Arthur only, so run its shatter part for Maximo -- unless Arthur's own
@@ -402,6 +409,7 @@ u16 p2_sat(u16 len)
     volatile u16 *buf = (volatile u16 *)0xFFB500;
     u16 n = len / 8;
     if (fb_on()) return fb_sat(len);
+    if (PERSIST->home[HOP_ATTACK] && n && n < 64) aim_sat(buf, n);
     if (!active || !coop_on() || n == 0 || n >= 64) return len;
     if (p1_state != PS_ALIVE) buf[0] = 0;           /* dead Arthur waits off screen */
     if (p2_state != PS_ALIVE) return len;

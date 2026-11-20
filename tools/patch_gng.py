@@ -178,6 +178,9 @@ def install_features(rom, build_dir):
     for a in (0x9204, 0x9982, 0x104F16):
         expect(rom, a, bytes.fromhex('13fc000100ffa218'), 'stage start weapon')
         put(rom, a, jsr(sym['hook_weapon_start']) + b'\x4e\x71')
+    # the throw: Home's ATTACK 4-WAY aims Arthur's new lance up or down (aim.c)
+    expect(rom, 0xBA4A, jmp(0x115DFC), 'throw')
+    put(rom, 0xBA4A, jmp(sym['hook_throw']))
     expect(rom, 0x6348, b'\x13\xfc\x00\x03' + be32(0xFFC500), 'continue lives')
     put(rom, 0x6348, jsr(sym['hook_continue_lives']) + b'\x4e\x71')
     expect(rom, 0x89E4, jmp(0x11C73E), 'sound play entry')
@@ -587,6 +590,7 @@ def install_features(rom, build_dir):
     install_parallax(rom, sym)
     install_vd_map(rom, sym)
     install_segswap(rom, sym)
+    install_vd_mirror(rom, sym)
 
 
 def install_segswap(rom, sym):
@@ -655,6 +659,18 @@ def install_vd_map(rom, sym):
     for a in (0x113D32, 0x113D74):
         expect(rom, a, bytes.fromhex('0c39000400ffc512'), 'stage map far-stage test')
         put(rom, a, jsr(sym['vd_map_far']) + b'\x4e\x71')
+
+
+def install_vd_mirror(rom, sym):
+    # Firebrand's Vendetta shown mirrored, left to right (src_patch/vdmirror.s): plane B's
+    # column streamer and each stage's row upload draw the mirrored table (the scroll,
+    # parallax.s's exits; the sprites, glue.s hook_sat_dma; the pad, pad.c)
+    jmp = lambda a: b'\x4e\xf9' + be32(a)
+    expect(rom, 0x94D8, bytes.fromhex('0c79ffff00ffb002'), 'column streamer entry')
+    put(rom, 0x94D8, jmp(sym['vdm_col']) + b'\x4e\x71')
+    for a in (0x970C, 0x104CF8, 0x10FFFE, 0x110FD2, 0x1155BE, 0x11A968):
+        expect(rom, a, bytes.fromhex('41f900ff0a00303c0100') + jsr(0x704BE), 'row upload')
+        put(rom, a + 10, jsr(sym['vdm_row_dma']))
 
 
 def install_speed(rom, sym):
@@ -1151,7 +1167,7 @@ def install_big_man_edge(rom, sym):
     put(rom, 0xAD4C, bytes.fromhex('4e714e714e71'))
 
 
-VERSION = 'V0.8.4 ALPHA'         # the features build's, in its header (src_patch/common.h)
+VERSION = 'V0.8.6 ALPHA'         # the features build's, in its header (src_patch/common.h)
 
 FRAME = 0x200                  # 32x32 4bpp, 16 tiles column-major
 MAXIMO_A = 0x109E2             # bank A: boot-time copy of A0..A10, loaded to VRAM $6000

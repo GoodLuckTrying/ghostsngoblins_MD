@@ -76,6 +76,22 @@ hook_weapon_start:
     movem.l (%sp)+,%d0-%d1/%a0-%a1
     rts
 
+| $BA4A: `jmp hook_throw` over `jmp $115DFC`, the throw (Arthur's and, from
+| p2_control, Maximo's). aim.c sees which slot it allocated (Home's 4-WAY).
+    .global hook_throw
+hook_throw:
+    tst.b   0xFF5000+24+5           | PERSIST->home[HOP_ATTACK]: NORMAL costs this only
+    bne.s   1f
+    jmp     0x115DFC
+1:  movem.l %d0-%d1/%a0-%a1,-(%sp)
+    jsr     aim_pre
+    movem.l (%sp)+,%d0-%d1/%a0-%a1
+    jsr     0x115DFC
+    movem.l %d0-%d1/%a0-%a1,-(%sp)
+    jsr     aim_post
+    movem.l (%sp)+,%d0-%d1/%a0-%a1
+    rts
+
 | $6348: `move.b #3,$FFC500` on continue
     .global hook_continue_lives
 hook_continue_lives:
@@ -397,7 +413,7 @@ hook_sat_dma:
     jsr     p2_sat
     addq.l  #4,%sp
     movem.l (%sp)+,%d1/%a0-%a1
-    jmp     0x704BE
+    jmp     vdm_sat_dma             | vdmirror.s: Vendetta's mirrored copy, then $704BE
 
 | $644, stage 1's sprite-table DMA: the arcade's water colour cycle first.
 | Every 8 frames the arcade ($EE00, stage 1) sets colours 42-44 from tables
@@ -667,13 +683,15 @@ score_event:
     rts
 
 | $11711E: `jsr $704BE` uploading a shot slot's art (a0 = source, d0 = length,
-| d1 = VRAM). Firebrand's shots get the fireball instead of the lance.
+| d1 = VRAM, d3 = slot * 2). Firebrand's shots get the fireball instead of the
+| lance, and Home's 4-WAY lances thrown up or down get it turned on its end.
     .global hook_shot_dma
 hook_shot_dma:
     movem.l %d0-%d1/%a1,-(%sp)
+    move.l  %d3,-(%sp)
     move.l  %a0,-(%sp)
-    jsr     fb_shot_src
-    addq.l  #4,%sp
+    jsr     aim_shot_src            | aim.c, after fb_shot_src
+    addq.l  #8,%sp
     movea.l %d0,%a0
     movem.l (%sp)+,%d0-%d1/%a1
     jmp     0x704BE
